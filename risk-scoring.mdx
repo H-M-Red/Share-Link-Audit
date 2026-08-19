@@ -1,6 +1,7 @@
 ---
 title: "Risk scoring"
 description: "The actual risk logic implemented in the monitoring script"
+icon: "shield-halved"
 ---
 
 Risk is calculated per event, not as a running score on the share itself, based on the event's type and its payload.
@@ -23,15 +24,40 @@ Risk is calculated per event, not as a running score on the share itself, based 
   </Card>
 </CardGroup>
 
+## Quick reference
+
+| Event type | Risk | Why |
+| :-- | :-- | :-- |
+| `enableShare` | Info | Default classification, no exposure change |
+| `disableShare` | Low | Turning a share off reduces risk by definition |
+| `regenerateShare` | Medium | Disruptive, but not itself a security exposure |
+| `configureShare` — removes a password that existed | High | Removes protection that was actually in place |
+| `configureShare` — drops enterprise-only restriction or clears domain allow-list | High | Widens who can access the link |
+| `configureShare` — removes password / disables domain restriction generally | Medium |  |
+| `configureShare` — enables copying or extension visibility | Medium |  |
+| `configureShare` — anything else | Low |  |
+
 ## The actual rule, condensed from the script
 
-For a `configureShare` event:
+For a `configureShare` event, checks run in this order and return early on the first match:
 
-1. If the change sets `restrictedToEnterpriseMembers` to `false`, or clears the email domain allow-list entirely → **High**.
-2. If the change removes password protection _and_ the share previously had one on record → **High**.
-3. If the change removes password protection generally, or disables domain restriction → **Medium**.
-4. If the change enables link copying or extension visibility → **Medium**.
-5. Otherwise → **Low**.
+<Steps>
+  <Step title="Enterprise-member restriction removed, or domain allow-list cleared" icon="lock-open">
+    → **High**
+  </Step>
+  <Step title="Password removed, and a password existed previously" icon="key">
+    → **High**
+  </Step>
+  <Step title="Password removed generally, or domain restriction disabled" icon="unlock">
+    → **Medium**
+  </Step>
+  <Step title="Link copying or extension visibility enabled" icon="copy">
+    → **Medium**
+  </Step>
+  <Step title="None of the above" icon="check">
+    → **Low**
+  </Step>
+</Steps>
 
 `regenerateShare` is always **Medium** (a new share ID means the old link stops working, which is disruptive but not itself a security exposure). `disableShare` is always **Low**. `enableShare` is always **Info**.
 

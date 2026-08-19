@@ -1,6 +1,7 @@
 ---
 title: "Introduction"
 description: "Proactive share link auditing for an enterprise Airtable deployment"
+icon: "compass"
 ---
 
 Share Link Auditor closes a real compliance gap in enterprise Airtable deployments by giving security teams the visibility into share link changes that the native Admin Panel does not surface. It runs entirely on Airtable's own APIs and automation tooling, no external service required.
@@ -40,3 +41,19 @@ Airtable's native Admin Panel doesn't surface **share link** creation or configu
 </Info>
 
 The `Config` table also carries a few fields, `Automated Notification Recipients`, `Auto-Archive High Risk`, `Last Weekly Report Sent`, that the current script doesn't act on yet, evidence of where this was headed next rather than a finished, closed project.
+
+## Where to go next
+
+<CardGroup cols={3}>
+  <Card title="How it works" icon="gears" href="/how-it-works">
+    Walk through the hourly monitoring cycle end to end, step by step.
+  </Card>
+
+  <Card title="Risk scoring" icon="shield-halved" href="/risk-scoring">
+    See exactly how each event gets classified as Info, Low, Medium, or High.
+  </Card>
+
+  <Card title="Remediation workflow" icon="wrench" href="/remediation-workflow">
+    Understand how the three tables fit together to support cleanup.
+  </Card>
+</CardGroup>
