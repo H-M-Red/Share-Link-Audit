@@ -9,12 +9,15 @@ Risk is calculated per event, not as a running score on the share itself, based 
   <Card title="Info" icon="circle-info">
     `enableShare`, and anything not otherwise classified.
   </Card>
+
   <Card title="Low" icon="shield-check">
     `disableShare` — turning a share off reduces risk by definition.
   </Card>
+
   <Card title="Medium" icon="triangle-exclamation">
     `regenerateShare`, or a `configureShare` that removes password protection or email domain restriction without also removing enterprise-member restriction.
   </Card>
+
   <Card title="High" icon="fire">
     A `configureShare` that removes enterprise-member restriction, sets no email domain restriction, or removes a password that was previously set.
   </Card>
@@ -23,8 +26,9 @@ Risk is calculated per event, not as a running score on the share itself, based 
 ## The actual rule, condensed from the script
 
 For a `configureShare` event:
+
 1. If the change sets `restrictedToEnterpriseMembers` to `false`, or clears the email domain allow-list entirely → **High**.
-2. If the change removes password protection *and* the share previously had one on record → **High**.
+2. If the change removes password protection _and_ the share previously had one on record → **High**.
 3. If the change removes password protection generally, or disables domain restriction → **Medium**.
 4. If the change enables link copying or extension visibility → **Medium**.
 5. Otherwise → **Low**.
@@ -33,4 +37,4 @@ For a `configureShare` event:
 
 ## Why this shape, specifically
 
-The rule prioritizes the change that actually widens exposure, removing a password that existed, or dropping the enterprise-only restriction, over changes that are procedural (rotating an ID) or restrictive (turning a share off). A share getting *more* locked down should never rank above one that just lost its only protection, and the ordering in the script reflects that directly: the checks for restriction and password removal run first and return early, before anything softer gets evaluated.
+The rule prioritizes the change that actually widens exposure, removing a password that existed, or dropping the enterprise-only restriction, over changes that are procedural (rotating an ID) or restrictive (turning a share off). A share getting _more_ locked down should never rank above one that just lost its only protection, and the ordering in the script reflects that directly: the checks for restriction and password removal run first and return early, before anything softer gets evaluated.

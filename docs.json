@@ -15,17 +15,27 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": ["introduction", "how-it-works"]
+            "pages": [
+              "introduction",
+              "how-it-works"
+            ],
+            "icon": "rocket"
           },
           {
             "group": "Concepts",
-            "pages": ["risk-scoring", "remediation-workflow"]
+            "pages": [
+              "risk-scoring",
+              "remediation-workflow"
+            ],
+            "icon": "lightbulb"
           }
-        ]
+        ],
+        "icon": "book"
       },
       {
         "tab": "API Reference",
-        "openapi": "api-reference/openapi.yaml"
+        "openapi": "api-reference/openapi.yaml",
+        "icon": "code"
       }
     ]
   },
@@ -36,5 +46,9 @@
         "href": "https://github.com/"
       }
     ]
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
   }
 }
