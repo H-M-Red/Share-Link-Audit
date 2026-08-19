@@ -1,0 +1,408 @@
+openapi: 3.1.0
+info:
+  title: Share Link Audit Trail API
+  description: >
+    Documentation for the real APIs behind this project: Airtable's own
+    Enterprise Audit Log API, which the monitoring script polls hourly, and
+    the standard Airtable Web API endpoints for the three tables it reads
+    from and writes to. Every path here is a real, callable Airtable
+    endpoint, none of it is a hypothetical wrapper.
+  version: "1.0.0"
+servers:
+  - url: https://api.airtable.com
+    description: Airtable production API
+security:
+  - bearerAuth: []
+tags:
+  - name: Enterprise Audit Log
+    description: Airtable's platform-level audit event feed
+  - name: Share Links
+    description: Current-state table, seeded from CSV, kept current by the script
+  - name: Share Link Audit Trail
+    description: Append-only event log
+  - name: Config
+    description: Single-record monitoring checkpoint and run health
+
+paths:
+  /v0/meta/enterpriseAccounts/{enterpriseAccountId}/auditLogEvents:
+    get:
+      tags: [Enterprise Audit Log]
+      summary: List enterprise audit log events
+      description: >
+        The real, live source of every event this project tracks. Called
+        hourly, filtered to the four share-configuration event types that
+        actually change a share's risk profile.
+      parameters:
+        - name: enterpriseAccountId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: entMSNTDdANSAcrfx
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 100
+            maximum: 100
+        - name: filterByEventTypes
+          in: query
+          description: Repeat this parameter once per event type to filter.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [enableShare, disableShare, configureShare, regenerateShare, viewShare]
+          style: form
+          explode: true
+        - name: offset
+          in: query
+          description: Pagination cursor from a previous response.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A page of audit events.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AuditEvent"
+                  offset:
+                    type: string
+                    nullable: true
+                    description: Present when another page is available.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v0/{baseId}/Share%20Links:
+    get:
+      tags: [Share Links]
+      summary: List share link records
+      parameters:
+        - $ref: "#/components/parameters/BaseId"
+        - name: filterByFormula
+          in: query
+          description: 'e.g. {Status} = "Active"'
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A page of Share Links records.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordListResponse"
+    post:
+      tags: [Share Links]
+      summary: Create share link records
+      description: >
+        Used when the hourly script encounters a share ID that has no
+        matching record, one that wasn't part of the original CSV backfill.
+      parameters:
+        - $ref: "#/components/parameters/BaseId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                records:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      fields:
+                        $ref: "#/components/schemas/ShareLinkFields"
+      responses:
+        "200":
+          description: Created records.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordListResponse"
+    patch:
+      tags: [Share Links]
+      summary: Update share link records
+      description: Used to update Status, Last Modified, Last Event Type, and Change Count after each matched event.
+      parameters:
+        - $ref: "#/components/parameters/BaseId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                records:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      fields:
+                        $ref: "#/components/schemas/ShareLinkFields"
+      responses:
+        "200":
+          description: Updated records.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordListResponse"
+
+  /v0/{baseId}/Share%20Link%20Audit%20Trail:
+    get:
+      tags: [Share Link Audit Trail]
+      summary: List audit trail entries
+      parameters:
+        - $ref: "#/components/parameters/BaseId"
+        - name: filterByFormula
+          in: query
+          description: 'e.g. {Risk Level} = "High"'
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A page of audit trail records.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordListResponse"
+    post:
+      tags: [Share Link Audit Trail]
+      summary: Create audit trail entries
+      description: One entry is written per matched event, every hourly run. This table is append-only in practice, the script never updates existing rows here.
+      parameters:
+        - $ref: "#/components/parameters/BaseId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                records:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      fields:
+                        $ref: "#/components/schemas/AuditTrailFields"
+      responses:
+        "200":
+          description: Created records.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordListResponse"
+
+  /v0/{baseId}/Config:
+    get:
+      tags: [Config]
+      summary: Read the monitoring checkpoint
+      parameters:
+        - $ref: "#/components/parameters/BaseId"
+      responses:
+        "200":
+          description: The single Config record (or none, before first run).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordListResponse"
+    patch:
+      tags: [Config]
+      summary: Update the monitoring checkpoint after a run
+      parameters:
+        - $ref: "#/components/parameters/BaseId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                records:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      fields:
+                        type: object
+                        properties:
+                          Last Audit Check Time:
+                            type: string
+                            format: date-time
+                          Last Run Status:
+                            type: string
+                            enum: [Success, Failed]
+      responses:
+        "200":
+          description: Updated Config record.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordListResponse"
+
+components:
+  parameters:
+    BaseId:
+      name: baseId
+      in: path
+      required: true
+      schema:
+        type: string
+        example: apps7IuQ61I9z3U1b
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: A personal access token with audit log and data read/write scopes.
+  responses:
+    Unauthorized:
+      description: Missing or invalid personal access token.
+  schemas:
+    AuditEvent:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        action:
+          type: string
+          enum: [enableShare, disableShare, configureShare, regenerateShare, viewShare]
+        modelId:
+          type: string
+          description: The share link's ID.
+        actor:
+          type: object
+          properties:
+            user:
+              type: object
+              properties:
+                email:
+                  type: string
+                id:
+                  type: string
+        context:
+          type: object
+          properties:
+            baseId:
+              type: string
+            workspaceId:
+              type: string
+        payload:
+          type: object
+          description: Event-specific fields, shape varies by action type.
+          properties:
+            isPasswordProtected:
+              type: boolean
+            restrictEmailDomainTo:
+              type: array
+              items:
+                type: string
+              nullable: true
+            restrictedToEnterpriseMembers:
+              type: boolean
+            shouldAllowCopy:
+              type: boolean
+            shouldShowExtensions:
+              type: boolean
+    ShareLinkFields:
+      type: object
+      properties:
+        shareId:
+          type: string
+        applicationId:
+          type: string
+        workspaceId:
+          type: string
+        shareType:
+          type: string
+          enum: [application, view]
+        hasPassword:
+          type: boolean
+        restrictedToEnterpriseMembers:
+          type: boolean
+        effectiveEmailDomainAllowList:
+          type: string
+        canBeCloned:
+          type: boolean
+        canBeExported:
+          type: boolean
+        canBeSynced:
+          type: boolean
+        Status:
+          type: string
+          enum: [Active, Disabled, Regenerated]
+        Last Modified:
+          type: string
+          format: date-time
+        Last Event Type:
+          type: string
+        Change Count:
+          type: number
+    AuditTrailFields:
+      type: object
+      properties:
+        Share ID:
+          type: string
+        Event Type:
+          type: string
+          enum: [enableShare, disableShare, configureShare, regenerateShare]
+        Event Time:
+          type: string
+          format: date-time
+        User:
+          type: string
+        User ID:
+          type: string
+        Application ID:
+          type: string
+        Workspace ID:
+          type: string
+        Details:
+          type: string
+          description: The raw event payload, JSON-stringified.
+        Risk Level:
+          type: string
+          enum: [Info, Low, Medium, High]
+        Changed Settings:
+          type: array
+          items:
+            type: string
+            enum: [Password, Domain Restriction, Enterprise Members, Copy, Extensions]
+        Password Added:
+          type: boolean
+        Password Removed:
+          type: boolean
+        Enterprise Restriction Removed:
+          type: boolean
+        Note:
+          type: string
+          description: 'e.g. "New share link not in original CSV"'
+    RecordListResponse:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              createdTime:
+                type: string
+                format: date-time
+              fields:
+                type: object
+        offset:
+          type: string
+          nullable: true

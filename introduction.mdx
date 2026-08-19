@@ -1,0 +1,21 @@
+---
+title: "Introduction"
+description: "Proactive share link auditing for an enterprise Airtable deployment"
+---
+
+## The problem
+
+Airtable's native Admin Panel doesn't surface **share link** creation or configuration changes today. For a large enterprise account, that's a real gap: share links can be created with no password and no restrictions, and there's no built-in way to see how many exist, who created them, or which ones actually got riskier over time.
+
+One enterprise account's security team flagged over **22,000 active share links** as a compliance concern. After confirming with Airtable's own product team that native admin visibility into share links wasn't on the near-term roadmap, this project builds that visibility directly on top of the Enterprise Audit Log API instead of waiting.
+
+## The architecture, exactly as built
+
+- **A one-time CSV backfill** populated a `Share Links` table with the full existing inventory of share links (shareId, creator, permission settings, sync status) before any live monitoring existed, since the Audit Log API only returns events going forward, not historical state.
+- **An hourly scheduled automation** (a `customScript` action on a `cron` trigger) polls Airtable's real Enterprise Audit Log API, `GET /v0/meta/enterpriseAccounts/{enterpriseAccountId}/auditLogEvents`, filtered to four event types: `enableShare`, `disableShare`, `configureShare`, `regenerateShare`. Plain view/base shares (`viewShare`) are deliberately excluded, since the events being tracked are the ones that actually change a share's risk profile, not general viewing activity.
+- **A `Config` table** stores the timestamp of the last successful check, so each hourly run only fetches events since the last run rather than re-scanning everything.
+- Every matched event becomes a new row in `Share Link Audit Trail`, and the corresponding `Share Links` record gets its status, last-modified time, and change count updated.
+
+## Why this matters
+
+This isn't a hypothetical integration wrapper. It's a real, running automation against Airtable's actual Enterprise Audit Log API, built to close a real compliance gap for a real enterprise account, using only that API and Airtable's own automation tooling, no external service required. The `Config` table also carries a few fields, `Automated Notification Recipients`, `Auto-Archive High Risk`, `Last Weekly Report Sent`, that the current script doesn't act on yet, evidence of where this was headed next rather than a finished, closed project.

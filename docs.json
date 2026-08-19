@@ -1,0 +1,40 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Share Link Auditor",
+  "colors": {
+    "primary": "#1F2A44",
+    "light": "#5C6BC0",
+    "dark": "#1F2A44"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "how-it-works"]
+          },
+          {
+            "group": "Concepts",
+            "pages": ["risk-scoring", "remediation-workflow"]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "openapi": "api-reference/openapi.yaml"
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/"
+      }
+    ]
+  }
+}
