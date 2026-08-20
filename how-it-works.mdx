@@ -1,16 +1,19 @@
 ---
 title: "How it works"
 description: "The real hourly monitoring cycle, end to end"
+icon: "gears"
 ---
 
 Every hour, a single custom script runs against Airtable's Enterprise Audit Log API and updates three tables in the same base. This page walks through that cycle end to end.
 
 ## Data flow
 
-```text
-Enterprise Audit Log API  →  hourly cron + custom script  →  Share Link Audit Trail (new rows)
-                                                            →  Share Links (status updated)
-                                                            →  Config (last-check timestamp)
+```mermaid
+flowchart LR
+    A[Enterprise Audit Log API] --> B[Hourly cron<br/>+ custom script]
+    B --> C[Share Link Audit Trail<br/>new rows]
+    B --> D[Share Links<br/>status updated]
+    B --> E[Config<br/>last-check timestamp]
 ```
 
 ## The hourly run, step by step

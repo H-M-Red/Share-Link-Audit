@@ -1,24 +1,45 @@
 ---
 title: "Remediation workflow"
 description: "How Share Links, Share Link Audit Trail, and Config fit together"
+icon: "wrench"
 ---
 
 ## Three tables, three jobs
 
-**`Share Links`** is the current-state snapshot, one row per share link, seeded once from a CSV export and kept current by the hourly script. It carries the link's configuration (`hasPassword`, `restrictedToEnterpriseMembers`, `effectiveEmailDomainAllowList`, `canBeCloned`/`canBeExported`/`canBeSynced`), where it lives (`workspaceId`, `applicationId`, `tableId`, `viewId`), and monitoring metadata (`Status`, `Last Modified`, `Last Event Type`, `Change Count`).
+<CardGroup cols={3}>
+  <Card title="Share Links" icon="table">
+    The current-state snapshot, one row per share link, seeded once from a CSV export and kept current by the hourly script. Carries configuration (`hasPassword`, `restrictedToEnterpriseMembers`, `effectiveEmailDomainAllowList`, `canBeCloned`/`canBeExported`/`canBeSynced`), location (`workspaceId`, `applicationId`, `tableId`, `viewId`), and monitoring metadata (`Status`, `Last Modified`, `Last Event Type`, `Change Count`).
+  </Card>
 
-**`Share Link Audit Trail`** is the append-only event log, one row per matched audit event, ever. It never gets updated in place, only added to, which is exactly what makes it useful as an actual audit trail rather than just a mirror of current state.
+  <Card title="Share Link Audit Trail" icon="list-check">
+    The append-only event log, one row per matched audit event, ever. It never gets updated in place, only added to, which is exactly what makes it useful as an actual audit trail rather than just a mirror of current state.
+  </Card>
 
-**`Config`** is a single-record settings table holding the monitoring checkpoint (`Last Audit Check Time`), the enterprise account ID being watched, and run health (`Last Run Status`, `Last Error Message`).
+  <Card title="Config" icon="gear">
+    A single-record settings table holding the monitoring checkpoint (`Last Audit Check Time`), the enterprise account ID being watched, and run health (`Last Run Status`, `Last Error Message`).
+  </Card>
+</CardGroup>
 
 ## `Status` on a Share Links record
 
 Set directly from the most recent matched event for that share:
 
-- **Active** — set by `enableShare`, and the default for `configureShare` when no other status applies.
-- **Disabled** — set by `disableShare`.
-- **Regenerated** — set by `regenerateShare`, meaning the share's ID changed and the old URL no longer resolves.
+<CardGroup cols={3}>
+  <Card title="Active" icon="circle-check">
+    Set by `enableShare`, and the default for `configureShare` when no other status applies.
+  </Card>
+
+  <Card title="Disabled" icon="ban">
+    Set by `disableShare`.
+  </Card>
+
+  <Card title="Regenerated" icon="arrows-rotate">
+    Set by `regenerateShare`, meaning the share's ID changed and the old URL no longer resolves.
+  </Card>
+</CardGroup>
 
 ## What's tracked but not yet acted on
 
-The `Config` table has fields the current script doesn't reference: `Automated Notification Recipients`, `Last Weekly Report Sent`, and `Auto-Archive High Risk`. They read as the next iteration of this project, alerting a distribution list when something High-risk shows up, a standing weekly digest, and automatically archiving links nobody's touched, rather than as dead configuration. Worth noting plainly rather than pretending the current script does more than it does.
+<Note>
+  The `Config` table has fields the current script doesn't reference: `Automated Notification Recipients`, `Last Weekly Report Sent`, and `Auto-Archive High Risk`. They read as the next iteration of this project, alerting a distribution list when something High-risk shows up, a standing weekly digest, and automatically archiving links nobody's touched, rather than as dead configuration. Worth noting plainly rather than pretending the current script does more than it does.
+</Note>
